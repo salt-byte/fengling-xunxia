@@ -226,10 +226,27 @@ function placeholderPerson(x,y,name,id){let cloth=CLOTH[id]||hashColor(id),wide=
 function placeholderDiao(x,y,name){ellipse(x,y+3,34,9,'#263c4025');ctx.fillStyle='#4a3b2e';ctx.beginPath();ctx.ellipse(x,y-50,26,44,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(x-20,y-80);ctx.quadraticCurveTo(x-62,y-70,x-50,y-20);ctx.quadraticCurveTo(x-30,y-50,x-18,y-40);ctx.fill();ctx.beginPath();ctx.moveTo(x+20,y-80);ctx.quadraticCurveTo(x+62,y-70,x+50,y-20);ctx.quadraticCurveTo(x+30,y-50,x+18,y-40);ctx.fill();ellipse(x,y-102,12,13,'#5a4936');ctx.fillStyle='#c9a24a';ctx.beginPath();ctx.moveTo(x+8,y-104);ctx.lineTo(x+22,y-98);ctx.lineTo(x+8,y-95);ctx.fill();ellipse(x+4,y-106,2.4,2.4,'#f0d27a');line(x-8,y-6,x-10,y+3,'#c9a24a',4);line(x+8,y-6,x+10,y+3,'#c9a24a',4);text(name,x,y-128,15);}
 function placeholderFox(x,y,name){ellipse(x,y+3,26,6,'#263c4025');ctx.fillStyle='#f2efe6';ctx.beginPath();ctx.ellipse(x,y-16,20,11,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(x-18,y-18);ctx.quadraticCurveTo(x-46,y-34,x-40,y-8);ctx.quadraticCurveTo(x-30,y-14,x-16,y-10);ctx.fill();ellipse(x+18,y-28,9,8,'#f2efe6');ctx.fillStyle='#f2efe6';ctx.beginPath();ctx.moveTo(x+13,y-34);ctx.lineTo(x+15,y-44);ctx.lineTo(x+19,y-35);ctx.moveTo(x+20,y-35);ctx.lineTo(x+24,y-44);ctx.lineTo(x+25,y-33);ctx.fill();ellipse(x+22,y-29,1.6,1.6,'#263c40');line(x-10,y-6,x-10,y+2,'#d8d4c8',3);line(x+10,y-6,x+10,y+2,'#d8d4c8',3);text(name,x,y-54,15);}
 function placeholderBeast(x,y,name,id){let h=SIZE[id]||60,w=h*1.1,c=id==='tiger'?'#b9844a':id==='leopard'?'#b7a066':id==='lion'?'#b8955a':'#8f8a80';ellipse(x,y+3,w*.5,8,'#263c4025');ellipse(x,y-h*.45,w*.45,h*.3,c);ellipse(x+w*.42,y-h*.62,h*.2,h*.18,c);for(const dx of [-.3,-.1,.15,.3])line(x+dx*w,y-h*.25,x+dx*w,y+2,'#5d5243',5);text(name,x,y-h-12,15);}
+
+// ---------- NPC procedural motion (no extra art): breathe, sway, lean toward Guo Xiang, bob while speaking, emotion beats, walk bob when moving ----------
+const npcMo={};
+function npcMotion(name,x,y){const now=clock,k=name||'';let m=npcMo[k];if(!m){let h=0;for(const c of k)h=(h*31+c.charCodeAt(0))%997;m=npcMo[k]={ph:h/997*6.283,lx:x,ly:y,moving:0,hop:-9};}
+ const moved=Math.hypot(x-m.lx,y-m.ly);m.moving=moved>0.4?0.25:Math.max(0,m.moving-1/60);m.lx=x;m.ly=y;
+ let dx=0,dy=0,rot=0,sx=1,sy=1;
+ const br=Math.sin(now*2.1+m.ph);sy=1+0.014*br;sx=1-0.007*br;rot=0.012*Math.sin(now*1.05+m.ph);
+ const h=state&&state.hero;if(h){const d=Math.hypot(h.x-x,h.y-y);if(d<170){const lean=(1-d/170)*0.05;rot+=Math.sign(h.x-x)*lean;if(d<95&&m.hop<now-6){m.hop=now;}}}
+ const ha=now-m.hop;if(ha>=0&&ha<0.35)dy-=Math.sin(ha/0.35*Math.PI)*5;
+ if(m.moving>0){dy-=Math.abs(Math.sin(now*11))*3;rot+=0.05*Math.sin(now*11);}
+ try{const ov=document.querySelector('#overlay');if(ov&&!ov.hidden&&typeof queue!=='undefined'&&queue[qIndex]){const l=queue[qIndex],sp=l.speaker||'';if(sp&&(sp===k||k.startsWith(sp)||sp.startsWith(k))){dy-=Math.abs(Math.sin(now*8))*3;sy*=1+0.01*Math.sin(now*16);const tx=l.text||'';
+   if(/哭|抖|颤/.test(tx))dx+=Math.sin(now*42)*1.6;
+   if(/蹦|跳起|一跃/.test(tx))dy-=Math.abs(Math.sin(now*6))*9;
+   if(/闭上眼|合上眼|去了|倒在/.test(tx)){rot+=0.18;dy+=3;}
+   if(/拱手|合十|拜/.test(tx))sy*=0.97;}}}catch(e){}
+ return {dx,dy,rot,sx,sy};}
+
 function npc(x,y,name,kind,height){const id=resolveKind(kind,name),H0=Number.isFinite(height)&&height>0?height:null;
  if(id==='guopolu'&&!ready(npcImages.guopolu?.im)){ctx.save();ctx.translate(x,y);ctx.scale(.77,.77);ctx.translate(-x,-y);ellipse(x,y,19,6,'#263c4020');ctx.fillStyle='#7d8f7a';ctx.fillRect(x-13,y-55,26,48);ellipse(x,y-65,10,12,'#cbb69a');ellipse(x,y-74,10,5,'#263c40');line(x-6,y-7,x-7,y+3,'#344b43',6);line(x+6,y-7,x+7,y+3,'#344b43',6);ctx.restore();text(name,x,y-80,15);return;}
  const entry=npcImages[id];
- if(entry&&ready(entry.im)){let im=entry.im,b=entry.bounds||[0,0,im.naturalWidth,im.naturalHeight],sw=b[2]-b[0],sh=b[3]-b[1],dh=H0||SIZE[id]||PERSON_H,dw=sw/sh*dh;ellipse(x,y+3,Math.min(60,dw*.35),7,'#263c4020');ctx.drawImage(im,b[0],b[1],sw,sh,x-dw/2,y-dh,dw,dh);text(name,x,y-dh-15,15);return;}
+ if(entry&&ready(entry.im)){let im=entry.im,b=entry.bounds||[0,0,im.naturalWidth,im.naturalHeight],sw=b[2]-b[0],sh=b[3]-b[1],dh=H0||SIZE[id]||PERSON_H,dw=sw/sh*dh;ellipse(x,y+3,Math.min(60,dw*.35),7,'#263c4020');const mo=npcMotion(name,x,y);ctx.save();ctx.translate(x+mo.dx,y+mo.dy);ctx.rotate(mo.rot);ctx.scale(mo.sx,mo.sy);ctx.drawImage(im,b[0],b[1],sw,sh,-dw/2,-dh,dw,dh);ctx.restore();text(name,x,y-dh-15+Math.min(0,mo.dy),15);return;}
  if(!stat.placeholders.includes(id))stat.placeholders.push(id);
  if(id==='diao'||id==='fox'){let k=(H0||SIZE[id])/(id==='diao'?126:46);ctx.save();ctx.translate(x,y);ctx.scale(k,k);(id==='diao'?placeholderDiao:placeholderFox)(0,0,'');ctx.restore();text(name,x,y-(H0||SIZE[id])-15,15);return;}if(['tiger','leopard','lion','elephant'].includes(id))return placeholderBeast(x,y,name,id);
  placeholderPerson(x,y,name,id);}
